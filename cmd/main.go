@@ -7,10 +7,15 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"pomo/config"
 	"pomo/internal/api"
+	apiHandlers "pomo/internal/api/handlers"
+	"pomo/internal/config"
 	"pomo/internal/database"
+	"pomo/internal/render"
+	repo "pomo/internal/repository"
+	"pomo/internal/services"
 	"pomo/internal/web"
+	webHandlers "pomo/internal/web/handlers"
 	"syscall"
 	"time"
 
@@ -34,6 +39,7 @@ func setup() *gin.Engine {
 	router := gin.Default()
 
 	database.Connection(config.Config)
+	render.NewRenderer(config.Config)
 
 	setupRoutes(router)
 	setupStaticFiles(router)
@@ -49,8 +55,13 @@ func setup() *gin.Engine {
 
 // setupRoutes sets up the routes for web and api
 func setupRoutes(router *gin.Engine) {
-	api.SetupRouter(router, database.DB)
-	web.SetupRouter(router, database.DB)
+	repository := repo.NewRepository(database.DB)
+	service := services.NewService(repository)
+	apiHandler := apiHandlers.NewHandler(service)
+	webHandler := webHandlers.NewHandler(service)
+
+	api.SetupRouter(router, apiHandler)
+	web.SetupRouter(router, webHandler)
 
 }
 

@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
-	"pomo/config"
+	"pomo/internal/config"
 
 	"pomo/internal/database"
 	"pomo/internal/models"

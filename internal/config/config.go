@@ -2,8 +2,12 @@ package config
 
 import (
 	"fmt"
+	"html/template"
+	"log"
+	"pomo/internal/models"
 	"time"
 
+	"github.com/alexedwards/scs/v2"
 	"github.com/spf13/viper"
 )
 
@@ -30,6 +34,13 @@ type AppConfig struct {
 	RefreshTokenExpiresIn  time.Duration `mapstructure:"REFRESH_TOKEN_EXPIRED_IN"`
 	AccessTokenMaxAge      int           `mapstructure:"ACCESS_TOKEN_MAXAGE"`
 	RefreshTokenMaxAge     int           `mapstructure:"REFRESH_TOKEN_MAXAGE"`
+
+	UseCache      bool
+	TemplateCache map[string]*template.Template
+	InfoLog       *log.Logger
+	ErrorLog      *log.Logger
+	Session       *scs.SessionManager
+	MailChannel   chan models.MailData
 }
 
 // LoadConfig loads the config from the given path and returns the application configuration.

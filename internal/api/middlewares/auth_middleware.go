@@ -3,7 +3,7 @@ package middlewares
 import (
 	"fmt"
 	"net/http"
-	"pomo/config"
+	"pomo/internal/config"
 	"pomo/internal/database"
 	"pomo/internal/models"
 	"pomo/internal/utils"

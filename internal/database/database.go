@@ -3,7 +3,7 @@ package database
 import (
 	"fmt"
 	"log"
-	"pomo/config"
+	"pomo/internal/config"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"

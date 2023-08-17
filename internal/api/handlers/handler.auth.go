@@ -1,11 +1,9 @@
-package authhandler
+package apiHandlers
 
 import (
 	"fmt"
 	"net/http"
-	"pomo/config"
-	authCtrl "pomo/internal/api/controllers/auth-controller"
-	usercontroller "pomo/internal/api/controllers/user-controller"
+	"pomo/internal/config"
 	modelsInput "pomo/internal/models/input"
 	modelsResponse "pomo/internal/models/response"
 	"pomo/internal/utils"
@@ -15,20 +13,8 @@ import (
 	"github.com/google/uuid"
 )
 
-type handler struct {
-	authService authCtrl.Service
-	userService usercontroller.Service
-}
-
-func NewAuthHandler(authService authCtrl.Service, userService usercontroller.Service) *handler {
-	return &handler{
-		authService: authService,
-		userService: userService,
-	}
-}
-
 // Login the user and return the token
-func (h *handler) LoginHandler(ctx *gin.Context) {
+func (h *Handler) LoginHandler(ctx *gin.Context) {
 	var input modelsInput.LoginInput
 	ctx.ShouldBindJSON(&input)
 
@@ -38,7 +24,7 @@ func (h *handler) LoginHandler(ctx *gin.Context) {
 		utils.APIErrorResponse(ctx, http.StatusBadRequest, errResponse)
 		return
 	}
-	user, errLogin := h.authService.Login(&input)
+	user, errLogin := h.service.Login(&input)
 
 	switch errLogin {
 
@@ -84,7 +70,7 @@ func (h *handler) LoginHandler(ctx *gin.Context) {
 }
 
 // Register new user account and return [authCtrl.RegisterResponse]
-func (h *handler) RegisterHandler(ctx *gin.Context) {
+func (h *Handler) RegisterHandler(ctx *gin.Context) {
 	var input modelsInput.RegisterInput
 
 	if ctx.ShouldBind(&input) != nil {
@@ -98,7 +84,7 @@ func (h *handler) RegisterHandler(ctx *gin.Context) {
 		return
 	}
 
-	_, errorCode := h.authService.Register(&input)
+	_, errorCode := h.service.Register(&input)
 
 	switch errorCode {
 	case http.StatusCreated:
@@ -117,13 +103,13 @@ func (h *handler) RegisterHandler(ctx *gin.Context) {
 }
 
 // Logout the user
-func (h *handler) LogoutHandler(ctx *gin.Context) {
-	h.authService.Logout(ctx)
+func (h *Handler) LogoutHandler(ctx *gin.Context) {
+	h.service.Logout(ctx)
 	utils.APIResponse(ctx, "Logout successfully", http.StatusOK, nil)
 }
 
 // RefreshTokenHandler refresh the token
-func (h *handler) RefreshTokenHandler(ctx *gin.Context) {
+func (h *Handler) RefreshTokenHandler(ctx *gin.Context) {
 	message := "Culd not refresh token"
 
 	cookie, err := ctx.Cookie("refresh_token")
@@ -139,7 +125,7 @@ func (h *handler) RefreshTokenHandler(ctx *gin.Context) {
 		return
 	}
 
-	user, status := h.userService.GetUserByUUID(uuid.MustParse(sub.(string)))
+	user, status := h.service.GetUserByUUID(uuid.MustParse(sub.(string)))
 	if status != http.StatusOK {
 		utils.APIErrorResponse(ctx, http.StatusForbidden, "User not found")
 		return

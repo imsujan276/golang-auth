@@ -1,4 +1,4 @@
-package authcontroller
+package services
 
 import (
 	"net/http"
@@ -10,26 +10,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// The `service` struct is the concrete implementation of the `Service` interface.
-type service struct {
-	repository Repository
-}
-
-// the `NewAuthService` function is the constructor of the `service` struct that
-// creates the new instance of the `service` struct
-func NewAuthService(repository Repository) *service {
-	return &service{repository: repository}
-}
-
-// The `Service` interface defines a contract for the service responsible for handling auth-related operations
-type Service interface {
-	Login(input *modelsInput.LoginInput) (*models.UserModel, int)
-	Register(input *modelsInput.RegisterInput) (*models.UserModel, int)
-	Logout(ctx *gin.Context) int
-}
-
-// The LoginService method of the service struct implements the LoginService method
-// from the Service interface.
 func (s *service) Login(input *modelsInput.LoginInput) (*models.UserModel, int) {
 	userModel := models.UserModel{
 		Email:    input.Email,

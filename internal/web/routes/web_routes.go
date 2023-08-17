@@ -1,12 +1,14 @@
 package web
 
 import (
+	webHandlers "pomo/internal/web/handlers"
+
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
-func AddWebRoutes(router *gin.Engine, db *gorm.DB) {
+func AddWebRoutes(router *gin.Engine, handler *webHandlers.Handler) {
 	router.GET("/", Test)
+	// router.GET("/", handler.Home)
 }
 
 func Test(c *gin.Context) {
