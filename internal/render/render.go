@@ -91,7 +91,7 @@ func CreateTemplateCache() (map[string]*template.Template, error) {
 			return myCache, err
 		}
 		if len(matches) > 0 {
-			templateSet, err = templateSet.ParseGlob("./templates/*.layout.html")
+			templateSet, _ = templateSet.ParseGlob("./templates/*.layout.html")
 		}
 
 		myCache[name] = templateSet

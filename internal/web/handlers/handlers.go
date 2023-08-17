@@ -2,18 +2,21 @@ package webHandlers
 
 import (
 	"net/http"
+	"pomo/internal/config"
 	"pomo/internal/models"
 	"pomo/internal/render"
 	"pomo/internal/services"
 )
 
 type Handler struct {
-	service services.Service
+	service   services.Service
+	appConfig *config.AppConfig
 }
 
-func NewHandler(service services.Service) *Handler {
+func NewHandler(service services.Service, appConfig *config.AppConfig) *Handler {
 	return &Handler{
-		service: service,
+		service:   service,
+		appConfig: appConfig,
 	}
 }
 

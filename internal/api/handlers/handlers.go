@@ -1,13 +1,18 @@
 package apiHandlers
 
-import "pomo/internal/services"
+import (
+	"pomo/internal/config"
+	"pomo/internal/services"
+)
 
 type Handler struct {
-	service services.Service
+	appConfig *config.AppConfig
+	service   services.Service
 }
 
-func NewHandler(service services.Service) *Handler {
+func NewHandler(service services.Service, appConfig *config.AppConfig) *Handler {
 	return &Handler{
-		service: service,
+		service:   service,
+		appConfig: appConfig,
 	}
 }

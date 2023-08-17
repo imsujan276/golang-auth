@@ -11,6 +11,7 @@ import (
 	apiHandlers "pomo/internal/api/handlers"
 	"pomo/internal/config"
 	"pomo/internal/database"
+	emailModels "pomo/internal/models/email"
 	"pomo/internal/render"
 	repo "pomo/internal/repository"
 	"pomo/internal/services"
@@ -19,16 +20,26 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/alexedwards/scs/v2"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
-	router := setup()
+	router, err := setup()
+
+	if err != nil {
+		log.Fatalf("Error setting up server: %v", err)
+		os.Exit(1)
+	}
+
+	defer close(config.Config.MailChannel)
+	listenForMail()
 	serve(router, config.Config)
 }
 
 // setup sets up the server
-func setup() *gin.Engine {
+func setup() (*gin.Engine, error) {
 	appConfig, err := config.LoadConfig(".")
 	if err != nil {
 		log.Fatalf("Error loading environment variables: %v", err)
@@ -36,9 +47,42 @@ func setup() *gin.Engine {
 	}
 
 	config.Config = appConfig
-	router := gin.Default()
+	config.Config.MailChannel = make(chan emailModels.MailData)
+	config.Config.InfoLog = log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
+	config.Config.ErrorLog = log.New(os.Stdout, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
 
-	database.Connection(config.Config)
+	session := scs.New()
+	session.Lifetime = 24 * time.Hour // session lasts for 24 hours
+	session.Cookie.Persist = true
+	session.Cookie.SameSite = http.SameSiteLaxMode
+	session.Cookie.Secure = config.Config.Debug // use ssl; set to true in production
+	config.Config.Session = session
+
+	router := gin.Default()
+	router.Use(gin.Recovery())
+	router.Use(gin.Logger())
+
+	corsConfig := cors.DefaultConfig()
+	corsConfig.AllowOrigins = []string{"http://localhost:8080", config.Config.Url}
+	corsConfig.AllowCredentials = true
+	router.Use(cors.New(corsConfig))
+
+	err = database.Connection(config.Config)
+	if err != nil {
+		log.Fatalf("Error connecting to database: %v", err)
+		return nil, err
+	}
+
+	tc, err := render.CreateTemplateCache()
+	if err != nil {
+		log.Println(err)
+		log.Fatal("Can not create template cache")
+		return nil, err
+	}
+
+	config.Config.TemplateCache = tc
+	config.Config.UseCache = false
+
 	render.NewRenderer(config.Config)
 
 	setupRoutes(router)
@@ -50,15 +94,15 @@ func setup() *gin.Engine {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	return router
+	return router, nil
 }
 
 // setupRoutes sets up the routes for web and api
 func setupRoutes(router *gin.Engine) {
 	repository := repo.NewRepository(database.DB)
 	service := services.NewService(repository)
-	apiHandler := apiHandlers.NewHandler(service)
-	webHandler := webHandlers.NewHandler(service)
+	apiHandler := apiHandlers.NewHandler(service, config.Config)
+	webHandler := webHandlers.NewHandler(service, config.Config)
 
 	api.SetupRouter(router, apiHandler)
 	web.SetupRouter(router, webHandler)

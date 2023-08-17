@@ -35,11 +35,15 @@ func (s *service) Register(input *modelsInput.RegisterInput) (*models.UserModel,
 		Image:    fileName,
 		Provider: input.Provider,
 		Role:     "user",
-		Verified: true,
+		Verified: false,
 	}
 	return s.repository.Register(&userModel)
 }
 
 func (s *service) Logout(ctx *gin.Context) int {
 	return s.repository.Logout(ctx)
+}
+
+func (s *service) DeleteUser(user *models.UserModel) error {
+	return s.repository.DeleteUser(user)
 }

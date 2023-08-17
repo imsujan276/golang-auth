@@ -20,6 +20,10 @@ func (r *repository) Login(input *models.UserModel) (*models.UserModel, int) {
 	if checkAccount.RowsAffected == 0 {
 		return nil, http.StatusNotFound
 	}
+
+	if !user.Verified {
+		return nil, http.StatusForbidden
+	}
 	// check if the password matches
 	verifyPassword := utils.VerifyPassword(user.Password, input.Password)
 
@@ -56,4 +60,8 @@ func (r *repository) Logout(ctx *gin.Context) int {
 	ctx.Set("user", nil)
 	ctx.Set("role", nil)
 	return http.StatusOK
+}
+
+func (r *repository) DeleteUser(user *models.UserModel) error {
+	return r.db.Delete(&user).Error
 }

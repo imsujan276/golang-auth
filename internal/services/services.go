@@ -24,7 +24,10 @@ type Service interface {
 	Login(input *modelsInput.LoginInput) (*models.UserModel, int)
 	Register(input *modelsInput.RegisterInput) (*models.UserModel, int)
 	Logout(ctx *gin.Context) int
+	DeleteUser(user *models.UserModel) error
 
 	GetUserByUUID(uuid uuid.UUID) (*models.UserModel, int)
 	GetMe(ctx *gin.Context) (*models.UserModel, int)
+	UpdateUser(input *models.UserModel) (*models.UserModel, error)
+	GetUserByCustomField(field string, value string) (*models.UserModel, error)
 }
