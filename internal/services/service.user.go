@@ -15,6 +15,10 @@ func (s *service) GetUserByUUID(uuid uuid.UUID) (*models.UserModel, int) {
 	return s.repository.GetUserByUUID(uuid)
 }
 
+func (s *service) GetUserByEmail(email string) (*models.UserModel, error) {
+	return s.repository.GetUserByEmail(email)
+}
+
 func (s *service) GetMe(ctx *gin.Context) (*models.UserModel, int) {
 	currentUser := ctx.MustGet("user").(models.UserModel)
 	return s.repository.GetUserByUUID(currentUser.ID)

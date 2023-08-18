@@ -9,6 +9,7 @@ import (
 	modelsInput "pomo/internal/models/input"
 	modelsResponse "pomo/internal/models/response"
 	"pomo/internal/utils"
+	emailTemplates "pomo/templates-email"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -19,7 +20,10 @@ import (
 // Login the user and return the token
 func (h *Handler) LoginHandler(ctx *gin.Context) {
 	var input modelsInput.LoginInput
-	ctx.ShouldBindJSON(&input)
+	if err := ctx.ShouldBindJSON(&input); err != nil {
+		utils.APIErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
 
 	errResponse, errCount := utils.GoValidator(&input)
 
@@ -96,7 +100,7 @@ func (h *Handler) RegisterHandler(ctx *gin.Context) {
 	switch errorCode {
 	case http.StatusCreated:
 		// Generate Verification Code
-		code := randstr.String(20)
+		code := randstr.String(6)
 
 		verification_code := utils.Encode(code)
 		newUser.VerificationCode = verification_code
@@ -111,16 +115,17 @@ func (h *Handler) RegisterHandler(ctx *gin.Context) {
 			From:     h.appConfig.EmailFrom,
 			To:       updatedUser.Email,
 			Subject:  "Verify your email",
-			Template: "verify_email.html",
-			Data: &emailModels.VerificationEmailData{
+			Template: emailTemplates.VerifyEmailTmpl,
+			Data: &emailModels.VerificationCodeEmailData{
 				Subject: "Verify your email",
 				Name:    updatedUser.Name,
-				URL:     fmt.Sprintf("%s/api/auth/verify-email/%s", config.Config.Url, code),
+				Code:    code,
+				// URL:     fmt.Sprintf("%s/api/auth/verify-email/%s", config.Config.Url, code),
 			},
 		}
 		h.appConfig.MailChannel <- msg
 
-		utils.APIResponse(ctx, "Verification email sent to the email", http.StatusCreated, nil)
+		utils.APIResponse(ctx, "Verification code sent to the email", http.StatusCreated, nil)
 		return
 
 	case http.StatusConflict:
@@ -193,7 +198,10 @@ func (h *Handler) ResendEmailVerificationHandler(ctx *gin.Context) {
 	var input struct {
 		Email string `json:"email" binding:"required,email"`
 	}
-	ctx.ShouldBindJSON(&input)
+	if err := ctx.ShouldBindJSON(&input); err != nil {
+		utils.APIErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
 
 	errResponse, errCount := utils.GoValidator(&input)
 
@@ -202,7 +210,7 @@ func (h *Handler) ResendEmailVerificationHandler(ctx *gin.Context) {
 		return
 	}
 
-	user, err := h.service.GetUserByCustomField("email", input.Email)
+	user, err := h.service.GetUserByEmail(input.Email)
 	if err != nil {
 		utils.APIErrorResponse(ctx, http.StatusNotFound, err.Error())
 		return
@@ -213,7 +221,7 @@ func (h *Handler) ResendEmailVerificationHandler(ctx *gin.Context) {
 		return
 	}
 
-	code := randstr.String(20)
+	code := randstr.String(6)
 	user.Verified = false
 	user.VerificationCode = utils.Encode(code)
 
@@ -228,15 +236,15 @@ func (h *Handler) ResendEmailVerificationHandler(ctx *gin.Context) {
 		From:     h.appConfig.EmailFrom,
 		To:       user.Email,
 		Subject:  "Verify your email",
-		Template: "verify_email.html",
-		Data: &emailModels.VerificationEmailData{
+		Template: emailTemplates.VerifyEmailTmpl,
+		Data: &emailModels.VerificationCodeEmailData{
 			Subject: "Verify your email",
 			Name:    user.Name,
-			URL:     fmt.Sprintf("%s/api/auth/verify-email/%s", config.Config.Url, code),
+			Code:    code,
 		},
 	}
 	h.appConfig.MailChannel <- msg
-	utils.APIResponse(ctx, "Verification email sent to the email", http.StatusOK, nil)
+	utils.APIResponse(ctx, "Verification code sent to the email", http.StatusOK, nil)
 }
 
 // Verify email
@@ -279,5 +287,105 @@ func (h *Handler) DeleteAccountHandler(ctx *gin.Context) {
 		utils.APIErrorResponse(ctx, http.StatusExpectationFailed, err.Error())
 		return
 	}
+	h.service.Logout(ctx)
 	utils.APIResponse(ctx, "Account deleted successfully", http.StatusOK, nil)
+}
+
+// forgot password handler
+func (h *Handler) ForgotPasswordHandler(ctx *gin.Context) {
+	var input struct {
+		Email string `json:"email" binding:"required,email"`
+	}
+	if err := ctx.ShouldBindJSON(&input); err != nil {
+		utils.APIErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	errResponse, errCount := utils.GoValidator(&input)
+
+	if errCount > 0 {
+		utils.APIErrorResponse(ctx, http.StatusBadRequest, errResponse)
+		return
+	}
+
+	user, err := h.service.GetUserByEmail(input.Email)
+	if err != nil {
+		utils.APIErrorResponse(ctx, http.StatusNotFound, err.Error())
+		return
+	}
+
+	if !user.Verified {
+		utils.APIErrorResponse(ctx, http.StatusForbidden, "Account not verified")
+		return
+	}
+
+	// Generate Verification Code
+	code := randstr.String(6)
+
+	passwordResetCode := utils.Encode(code)
+	user.PasswordResetCode = passwordResetCode
+	updatedUser, err := h.service.UpdateUser(user)
+	if err != nil {
+		utils.APIErrorResponse(ctx, http.StatusExpectationFailed, err.Error())
+		return
+	}
+
+	// send email
+	msg := emailModels.MailData{
+		From:     h.appConfig.EmailFrom,
+		To:       updatedUser.Email,
+		Subject:  "Your password reset token",
+		Template: emailTemplates.ResetPasswordTmpl,
+		Data: &emailModels.VerificationCodeEmailData{
+			Subject: "Reset your password",
+			Name:    updatedUser.Name,
+			Code:    code,
+		},
+	}
+	h.appConfig.MailChannel <- msg
+
+	utils.APIResponse(ctx, "You will receive a reset email if user with that email exist", http.StatusOK, nil)
+}
+
+// reset password handler
+func (h *Handler) ResetPasswordHandler(ctx *gin.Context) {
+	var input struct {
+		Password        string `json:"password" binding:"required,min=8,max=30"`
+		ConfirmPassWord string `json:"confirm_password" binding:"required,min=8,max=30"`
+		// ConfirmPassWord string `json:"confirm_password" binding:"required,min=8,max=30,eqfield=Password"`
+		Token string `json:"token" binding:"required"`
+	}
+	if err := ctx.ShouldBindJSON(&input); err != nil {
+		utils.APIErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	errResponse, errCount := utils.GoValidator(&input)
+	if errCount > 0 {
+		utils.APIErrorResponse(ctx, http.StatusBadRequest, errResponse)
+		return
+	}
+
+	if input.Password != input.ConfirmPassWord {
+		utils.APIErrorResponse(ctx, http.StatusBadRequest, "Password and confirm password does not match")
+		return
+	}
+
+	passwordResetToken := utils.Encode(input.Token)
+
+	user, err := h.service.GetUserByCustomField("password_reset_code", passwordResetToken)
+	if err != nil {
+		utils.APIErrorResponse(ctx, http.StatusNotFound, "Token is invalid or has expired")
+		return
+	}
+
+	user.Password = utils.HashPassword(input.Password)
+	user.PasswordResetCode = ""
+	_, err = h.service.UpdateUser(user)
+	if err != nil {
+		utils.APIErrorResponse(ctx, http.StatusExpectationFailed, err.Error())
+		return
+	}
+	h.service.Logout(ctx)
+	utils.APIResponse(ctx, "Password reset successfully", http.StatusOK, nil)
 }

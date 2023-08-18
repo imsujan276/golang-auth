@@ -1,11 +1,13 @@
 package webHandlers
 
 import (
-	"net/http"
 	"pomo/internal/config"
 	"pomo/internal/models"
-	"pomo/internal/render"
 	"pomo/internal/services"
+	"pomo/internal/utils"
+	"pomo/templates"
+
+	"github.com/gin-gonic/gin"
 )
 
 type Handler struct {
@@ -20,6 +22,7 @@ func NewHandler(service services.Service, appConfig *config.AppConfig) *Handler 
 	}
 }
 
-func (h *Handler) Home(w http.ResponseWriter, r *http.Request) {
-	render.Template(w, r, "home.page.html", &models.TemplateData{})
+func (h *Handler) Home(ctx *gin.Context) {
+	// render.Template(w, r, "home.page.html", &models.TemplateData{})
+	utils.HTMLResponse(ctx, templates.Home, &models.TemplateData{})
 }

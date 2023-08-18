@@ -26,6 +26,7 @@ type Repository interface {
 	Logout(ctx *gin.Context) int
 	DeleteUser(user *models.UserModel) error
 	GetUserByUUID(uuid uuid.UUID) (*models.UserModel, int)
+	GetUserByEmail(email string) (*models.UserModel, error)
 	UpdateUser(input *models.UserModel) (*models.UserModel, error)
 	GetUserByCustomField(field string, value string) (*models.UserModel, error)
 }

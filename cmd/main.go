@@ -12,7 +12,6 @@ import (
 	"pomo/internal/config"
 	"pomo/internal/database"
 	emailModels "pomo/internal/models/email"
-	"pomo/internal/render"
 	repo "pomo/internal/repository"
 	"pomo/internal/services"
 	"pomo/internal/web"
@@ -48,8 +47,6 @@ func setup() (*gin.Engine, error) {
 
 	config.Config = appConfig
 	config.Config.MailChannel = make(chan emailModels.MailData)
-	config.Config.InfoLog = log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
-	config.Config.ErrorLog = log.New(os.Stdout, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
 
 	session := scs.New()
 	session.Lifetime = 24 * time.Hour // session lasts for 24 hours
@@ -61,6 +58,8 @@ func setup() (*gin.Engine, error) {
 	router := gin.Default()
 	router.Use(gin.Recovery())
 	router.Use(gin.Logger())
+	router.LoadHTMLGlob("./templates/layouts/*.layout.html")
+	router.LoadHTMLGlob("./templates/pages/*.page.html")
 
 	corsConfig := cors.DefaultConfig()
 	corsConfig.AllowOrigins = []string{"http://localhost:8080", config.Config.Url}
@@ -72,18 +71,6 @@ func setup() (*gin.Engine, error) {
 		log.Fatalf("Error connecting to database: %v", err)
 		return nil, err
 	}
-
-	tc, err := render.CreateTemplateCache()
-	if err != nil {
-		log.Println(err)
-		log.Fatal("Can not create template cache")
-		return nil, err
-	}
-
-	config.Config.TemplateCache = tc
-	config.Config.UseCache = false
-
-	render.NewRenderer(config.Config)
 
 	setupRoutes(router)
 	setupStaticFiles(router)

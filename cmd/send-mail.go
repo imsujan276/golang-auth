@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"pomo/internal/config"
 	emailModels "pomo/internal/models/email"
+	emailTemplates "pomo/templates-email"
 	"text/template"
 
 	"github.com/k3a/html2text"
@@ -57,7 +58,7 @@ func sendEmail(m emailModels.MailData) {
 
 	var body bytes.Buffer
 
-	template, err := ParseTemplateDir("templates-email")
+	template, err := ParseTemplateDir(emailTemplates.Path)
 	if err != nil {
 		log.Fatal("Could not parse template", err)
 	}

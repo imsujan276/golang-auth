@@ -7,10 +7,5 @@ import (
 )
 
 func AddWebRoutes(router *gin.Engine, handler *webHandlers.Handler) {
-	router.GET("/", Test)
-	// router.GET("/", handler.Home)
-}
-
-func Test(c *gin.Context) {
-	c.JSON(200, gin.H{"message": "Working..."})
+	router.GET("/", handler.Home)
 }

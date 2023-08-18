@@ -9,8 +9,9 @@ type MailData struct {
 	Data     interface{}
 }
 
-type VerificationEmailData struct {
+type VerificationCodeEmailData struct {
 	Subject string
 	Name    string
+	Code    string
 	URL     string
 }

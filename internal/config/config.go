@@ -2,8 +2,6 @@ package config
 
 import (
 	"fmt"
-	"html/template"
-	"log"
 	emailModels "pomo/internal/models/email"
 	"time"
 
@@ -15,6 +13,8 @@ import (
 var Config *AppConfig
 
 type AppConfig struct {
+	Session                *scs.SessionManager
+	MailChannel            chan emailModels.MailData
 	Debug                  bool          `mapstructure:"ENV"`
 	Url                    string        `mapstructure:"APP_URL"`
 	DBHost                 string        `mapstructure:"POSTGRES_HOST"`
@@ -36,13 +36,6 @@ type AppConfig struct {
 	SMTPPass               string        `mapstructure:"SMTP_PASS"`
 	SMTPPort               int           `mapstructure:"SMTP_PORT"`
 	SMTPUser               string        `mapstructure:"SMTP_USER"`
-
-	UseCache      bool
-	TemplateCache map[string]*template.Template
-	InfoLog       *log.Logger
-	ErrorLog      *log.Logger
-	Session       *scs.SessionManager
-	MailChannel   chan emailModels.MailData
 }
 
 // LoadConfig loads the config from the given path and returns the application configuration.

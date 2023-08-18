@@ -21,13 +21,16 @@ func NewService(repository repo.Repository) *service {
 
 // The `Service` interface defines a contract for the service responsible for handling auth-related operations
 type Service interface {
+	// Auth
 	Login(input *modelsInput.LoginInput) (*models.UserModel, int)
 	Register(input *modelsInput.RegisterInput) (*models.UserModel, int)
 	Logout(ctx *gin.Context) int
 	DeleteUser(user *models.UserModel) error
 
+	// User
 	GetUserByUUID(uuid uuid.UUID) (*models.UserModel, int)
 	GetMe(ctx *gin.Context) (*models.UserModel, int)
-	UpdateUser(input *models.UserModel) (*models.UserModel, error)
+	GetUserByEmail(email string) (*models.UserModel, error)
 	GetUserByCustomField(field string, value string) (*models.UserModel, error)
+	UpdateUser(input *models.UserModel) (*models.UserModel, error)
 }

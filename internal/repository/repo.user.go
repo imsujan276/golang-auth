@@ -26,6 +26,15 @@ func (r *repository) GetUserByUUID(uuid uuid.UUID) (*models.UserModel, int) {
 	return &user, http.StatusOK
 }
 
+func (r *repository) GetUserByEmail(email string) (*models.UserModel, error) {
+	var user models.UserModel
+	checkAccount := r.db.First(&user, "email = ?", fmt.Sprint(email))
+	if checkAccount.Error != nil {
+		return nil, checkAccount.Error
+	}
+	return &user, nil
+}
+
 func (r *repository) UpdateUser(input *models.UserModel) (*models.UserModel, error) {
 	err := r.db.Save(input).Error
 	if err != nil {

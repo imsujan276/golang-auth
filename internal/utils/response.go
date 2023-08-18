@@ -40,3 +40,11 @@ func APIErrorResponse(ctx *gin.Context, StatusCode int, Error interface{}) {
 	ctx.JSON(StatusCode, errResponse)
 	defer ctx.AbortWithStatus(StatusCode)
 }
+
+func HTMLResponse(ctx *gin.Context, Template string, Data interface{}) {
+	ctx.HTML(
+		200,
+		Template,
+		Data,
+	)
+}
