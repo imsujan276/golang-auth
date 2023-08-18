@@ -7,15 +7,13 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"pomo/internal/api"
-	apiHandlers "pomo/internal/api/handlers"
 	"pomo/internal/config"
 	"pomo/internal/database"
+	"pomo/internal/handlers"
 	emailModels "pomo/internal/models/email"
 	repo "pomo/internal/repository"
+	"pomo/internal/routes"
 	"pomo/internal/services"
-	"pomo/internal/web"
-	webHandlers "pomo/internal/web/handlers"
 	"syscall"
 	"time"
 
@@ -58,8 +56,6 @@ func setup() (*gin.Engine, error) {
 	router := gin.Default()
 	router.Use(gin.Recovery())
 	router.Use(gin.Logger())
-	router.LoadHTMLGlob("./templates/layouts/*.layout.html")
-	router.LoadHTMLGlob("./templates/pages/*.page.html")
 
 	corsConfig := cors.DefaultConfig()
 	corsConfig.AllowOrigins = []string{"http://localhost:8080", config.Config.Url}
@@ -88,17 +84,14 @@ func setup() (*gin.Engine, error) {
 func setupRoutes(router *gin.Engine) {
 	repository := repo.NewRepository(database.DB)
 	service := services.NewService(repository)
-	apiHandler := apiHandlers.NewHandler(service, config.Config)
-	webHandler := webHandlers.NewHandler(service, config.Config)
-
-	api.SetupRouter(router, apiHandler)
-	web.SetupRouter(router, webHandler)
-
+	handler := handlers.NewHandler(service, config.Config)
+	routes.SetupApiRoutes(router, handler)
 }
 
 // setupStaticFiles sets up the static files
 func setupStaticFiles(router *gin.Engine) {
 	router.Static("/static/images", "./static/images")
+	router.Static("/uploads/images", "./uploads/images")
 }
 
 // serve start server using Graceful Shutdown

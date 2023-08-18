@@ -10,17 +10,15 @@ import (
 
 func (r *repository) GetUserByCustomField(field string, value string) (*models.UserModel, error) {
 	var user models.UserModel
-	result := r.db.First(&user, fmt.Sprintf("%s = ?", field), value)
-	if result.Error != nil {
-		return nil, result.Error
+	if err := r.db.First(&user, fmt.Sprintf("%s = ?", field), value).Error; err != nil {
+		return nil, err
 	}
 	return &user, nil
 }
 
 func (r *repository) GetUserByUUID(uuid uuid.UUID) (*models.UserModel, int) {
 	var user models.UserModel
-	checkAccount := r.db.First(&user, "id = ?", fmt.Sprint(uuid))
-	if checkAccount.Error != nil {
+	if err := r.db.First(&user, "id = ?", fmt.Sprint(uuid)).Error; err != nil {
 		return nil, http.StatusNotFound
 	}
 	return &user, http.StatusOK
@@ -28,16 +26,14 @@ func (r *repository) GetUserByUUID(uuid uuid.UUID) (*models.UserModel, int) {
 
 func (r *repository) GetUserByEmail(email string) (*models.UserModel, error) {
 	var user models.UserModel
-	checkAccount := r.db.First(&user, "email = ?", fmt.Sprint(email))
-	if checkAccount.Error != nil {
-		return nil, checkAccount.Error
+	if err := r.db.First(&user, "email = ?", fmt.Sprint(email)).Error; err != nil {
+		return nil, err
 	}
 	return &user, nil
 }
 
 func (r *repository) UpdateUser(input *models.UserModel) (*models.UserModel, error) {
-	err := r.db.Save(input).Error
-	if err != nil {
+	if err := r.db.Save(input).Error; err != nil {
 		return nil, err
 	}
 	return input, nil

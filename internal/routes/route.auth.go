@@ -1,13 +1,13 @@
-package api
+package routes
 
 import (
-	apiHandlers "pomo/internal/api/handlers"
-	"pomo/internal/api/middlewares"
+	"pomo/internal/handlers"
+	"pomo/internal/middlewares"
 
 	"github.com/gin-gonic/gin"
 )
 
-func AddAuthRoute(rg *gin.RouterGroup, handler *apiHandlers.Handler) {
+func AddAuthRoute(rg *gin.RouterGroup, handler *handlers.Handler) {
 
 	router := rg.Group("/auth")
 	router.POST("/login", handler.LoginHandler)

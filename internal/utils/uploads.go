@@ -1,12 +1,15 @@
 package utils
 
 import (
-	"fmt"
 	"io"
 	"mime/multipart"
 	"os"
 	"path/filepath"
 	"time"
+)
+
+var (
+	yearMonthDayFormat = time.Now().Format("2006/01/02")
 )
 
 // UploadImage uploads an image to the server and returns the file path
@@ -18,24 +21,26 @@ func UploadImage(file multipart.File, header *multipart.FileHeader, destination 
 	}
 
 	// Set the default destination if not provided
-	dest := filepath.Join(currentDir, "uploads/images")
+	uploadDir := filepath.Join(currentDir, "uploads/images")
 	if len(destination) > 0 {
-		dest = destination[0]
+		uploadDir = destination[0]
 	}
+	savePath := filepath.Join(uploadDir, yearMonthDayFormat)
+	fullDestination := filepath.Join(currentDir, savePath)
 
 	// Create the destination folder if it doesn't exist
-	err = os.MkdirAll(dest, os.ModePerm)
+	err = os.MkdirAll(fullDestination, os.ModePerm)
 	if err != nil {
 		return "", err
 	}
 
 	// Generate a unique filename
-	filename := generateUniqueFilename()
+	filename := GenerateRandomString(8)
 	// Get the file extension from the original filename
 	extension := filepath.Ext(header.Filename)
 
 	// Create a new file on the server inside the destination folder
-	filePath := filepath.Join(dest, filename+extension)
+	filePath := filepath.Join(fullDestination, filename+extension)
 	dst, err := os.Create(filePath)
 	if err != nil {
 		return "", err
@@ -60,11 +65,13 @@ func UploadedFormDataImg(uploadedFormImg *multipart.FileHeader, destination ...s
 	}
 
 	// Set the default destination if not provided
-	dest := "uploads/images"
+	uploadDir := "uploads/images"
 	if len(destination) > 0 {
-		dest = destination[0]
+		uploadDir = destination[0]
 	}
-	fullDestination := filepath.Join(currentDir, dest)
+
+	savePath := filepath.Join(uploadDir, yearMonthDayFormat)
+	fullDestination := filepath.Join(currentDir, savePath)
 
 	// Create the destination folder if it doesn't exist
 	err = os.MkdirAll(fullDestination, os.ModePerm)
@@ -73,12 +80,12 @@ func UploadedFormDataImg(uploadedFormImg *multipart.FileHeader, destination ...s
 	}
 
 	// Generate a unique filename
-	filename := generateUniqueFilename()
+	filename := GenerateRandomString(8)
 	// Get the file extension from the original filename
 	extension := filepath.Ext(uploadedFormImg.Filename)
 
 	// Create a new file on the server inside the destination folder
-	filePath := filepath.Join(dest, filename+extension)
+	filePath := filepath.Join(fullDestination, filename+extension)
 	dst, err := os.Create(filePath)
 	if err != nil {
 		return "", err
@@ -108,11 +115,4 @@ func DeleteFile(pathToFile string) error {
 		return err
 	}
 	return nil
-}
-
-func generateUniqueFilename() string {
-	// Generate a unique filename based on the current timestamp
-	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
-	filename := fmt.Sprintf("file_%d", timestamp)
-	return filename
 }

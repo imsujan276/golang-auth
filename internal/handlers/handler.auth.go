@@ -1,4 +1,4 @@
-package apiHandlers
+package handlers
 
 import (
 	"fmt"
@@ -92,6 +92,13 @@ func (h *Handler) RegisterHandler(ctx *gin.Context) {
 	errorResponse, errCount := utils.GoValidator(&input)
 	if errCount > 0 {
 		utils.APIErrorResponse(ctx, http.StatusForbidden, errorResponse)
+		return
+	}
+
+	_, err := h.service.GetUserByEmail(input.Email)
+	print(err.Error())
+	if err == nil {
+		utils.APIErrorResponse(ctx, http.StatusForbidden, "Email already taken")
 		return
 	}
 

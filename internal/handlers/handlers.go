@@ -1,4 +1,4 @@
-package apiHandlers
+package handlers
 
 import (
 	"pomo/internal/config"
